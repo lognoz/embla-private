@@ -72,8 +72,7 @@ It require an non-empty string before to return it."
   (locate-dominating-file
     (file-name-as-directory (file-name-directory buffer-file-name)) ".git"))
 
-
-(defun front-end-developer-scss-include-screen--candidates (alist)
+(defun front-end-developer--scss-breakpoints-candidates (alist)
   "Return formatted ALIST for `completing-read' function."
   (let ((candidates))
     (dolist (parameters alist)
@@ -82,7 +81,7 @@ It require an non-empty string before to return it."
         (setq candidates (push (cons name value) candidates))))
     candidates))
 
-(defun front-end-developer-scss--add-to-breakpoints-variables (breakpoint scss-variables path breakpoints)
+(defun front-end-developer--scss-add-to-breakpoints-variables (breakpoint scss-variables path breakpoints)
   "Insert new BREAKPOINT to its SCSS-VARIABLES loacted in PATH.
 This function expects to receives a list of already defined BREAKPOINTS."
   (let* ((size (front-end-developer--read
@@ -117,7 +116,7 @@ This function expects to receives a list of already defined BREAKPOINTS."
       (when (assoc 'breakpoints scss-variables)
         (cdr (assoc 'breakpoints scss-variables))))
     (when breakpoints
-      (setq candidates (front-end-developer-scss-include-screen--candidates breakpoints)))
+      (setq candidates (front-end-developer--scss-breakpoints-candidates breakpoints)))
     (setq answer
       (front-end-developer--read
         :input "Reference"
@@ -126,11 +125,8 @@ This function expects to receives a list of already defined BREAKPOINTS."
     (setq screen
       (if (assoc answer candidates)
           (cdr (assoc answer candidates))
-        (front-end-developer-scss--add-to-breakpoints-variables
-          answer
-          scss-variables
-          scss-path
-          breakpoints)
+        (front-end-developer--scss-add-to-breakpoints-variables
+          answer scss-variables scss-path breakpoints)
         answer))
     (format "@include screen ('%s') {\n\t$0\n}" screen)))
 
