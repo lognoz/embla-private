@@ -1,4 +1,4 @@
-;;; lisp/architect.el --- architect configurations -*- lexical-binding: t; -*-
+;;; lisp/tools/architect.el --- architect configurations -*- lexical-binding: t; -*-
 
 ;; Copyright (c) Marc-Antoine Loignon
 
