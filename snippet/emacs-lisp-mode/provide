@@ -1,0 +1,4 @@
+# -*- mode: snippet -*-
+# name: provide
+# --
+(provide '`(buffer-file-name-body)`)$0

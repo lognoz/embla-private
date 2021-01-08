@@ -1,0 +1,4 @@
+# -*- mode: snippet -*-
+# name: message
+# --
+(message "%s" ${1:variable})
