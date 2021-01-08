@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: debug
+# --
+echo "<pre>";
+print_r(${1:$variable});
+exit;
