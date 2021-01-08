@@ -82,13 +82,13 @@ It require an non-empty string before to return it."
         (setq candidates (push (cons name value) candidates))))
     candidates))
 
-(defun front-end-developer-scss-add-to-breakpoints-variables (breakpoint scss-variables path breakpoints)
+(defun front-end-developer-scss--add-to-breakpoints-variables (breakpoint scss-variables path breakpoints)
   "Insert new BREAKPOINT to its SCSS-VARIABLES loacted in PATH.
 This function expects to receives a list of already defined BREAKPOINTS."
   (let* ((size (front-end-developer--read
-                :regex "^[0-9]+$"
-                :input "Size"
-                :input-error "number only"))
+                  :regex "^[0-9]+$"
+                  :input "Size"
+                  :input-error "number only"))
          (new-breakpoint (cons breakpoint (string-to-number size))))
     (if breakpoints
         (setf (cdr (assoc 'breakpoints scss-variables))
@@ -120,13 +120,13 @@ This function expects to receives a list of already defined BREAKPOINTS."
       (setq candidates (front-end-developer-scss-include-screen--candidates breakpoints)))
     (setq answer
       (front-end-developer--read
-                      :input "Reference"
-                      :candidates candidates
-                      :prompt 'completing-read))
+        :input "Reference"
+        :candidates candidates
+        :prompt 'completing-read))
     (setq screen
       (if (assoc answer candidates)
           (cdr (assoc answer candidates))
-        (front-end-developer-scss-add-to-breakpoints-variables
+        (front-end-developer-scss--add-to-breakpoints-variables
           answer
           scss-variables
           scss-path
@@ -139,8 +139,5 @@ This function expects to receives a list of already defined BREAKPOINTS."
   "Mode for front-end languages development."
   :lighter " front-end-developer"
   :global t)
-
-
-(provide 'front-end-developer)
 
 ;;; front-end-developer.el ends here
