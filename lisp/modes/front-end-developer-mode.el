@@ -25,12 +25,21 @@
 
 (require 'cl-lib)
 
-;;; Contextual constant.
+;;; Contextual variables.
 
 (defgroup front-end-developer nil
   "Provide more human-friendly front-end language development environment."
   :prefix "front-end-developer-"
   :group 'tools)
+
+(defvar front-end-developer-root-directory nil
+  "The directory of project root.")
+
+(defvar front-end-developer-scss-variables-path nil
+  "The variables file located in scss directory.")
+
+(defvar front-end-developer-scss-variables nil
+  "The configuration variables.")
 
 ;;; Internal functions.
 
@@ -64,10 +73,16 @@ If CANDIDATES is non-nil, it will provide completion in `completing-read'."
         (setq prompt-text prompt-error-text)))
     answer))
 
-(defun front-end-developer--root-directory ()
-  "Return project root directory."
-  (locate-dominating-file
-    (file-name-as-directory (file-name-directory buffer-file-name)) ".git"))
+(defun front-end-developer--set-global ()
+  "Set root directory and scss variables."
+  (setq front-end-developer-root-directory
+    (locate-dominating-file
+      (file-name-as-directory (file-name-directory buffer-file-name)) ".git"))
+  (setq front-end-developer-scss-variables-path
+    (expand-file-name "scss/variables.json" front-end-developer-root-directory))
+  (unless (file-exists-p front-end-developer-scss-variables-path)
+    (user-error "front-end-developer: Unable to find %s" front-end-developer-scss-variables-path))
+  (setq front-end-developer-scss-variables (json-content front-end-developer-scss-variables-path)))
 
 (defun front-end-developer--scss-breakpoints-candidates (alist)
   "Return formatted ALIST for `completing-read' function."
@@ -78,36 +93,29 @@ If CANDIDATES is non-nil, it will provide completion in `completing-read'."
         (setq candidates (push (cons name value) candidates))))
     candidates))
 
-(defun front-end-developer--scss-add-to-breakpoints-variables (breakpoint scss-variables path breakpoints)
-  "Insert new BREAKPOINT to its SCSS-VARIABLES loacted in PATH.
-This function expects to receives a list of already defined BREAKPOINTS."
-  (let* ((size (front-end-developer--read
-                 :regex "^[0-9]+$"
-                 :input "Size"
-                 :input-error "number only"))
-         (new-breakpoint (cons breakpoint (string-to-number size))))
-    (if breakpoints
-        (setf (cdr (assoc 'breakpoints scss-variables))
-          (push new-breakpoint breakpoints))
-      (setq scss-variables (push (cons 'breakpoints (list new-breakpoint)) scss-variables)))
-    (with-temp-buffer
-      (insert (json-encode-alist scss-variables))
-      (json-pretty-print-buffer)
-      (write-region 1 (point-max) path))))
+(defun front-end-developer--scss-append-to-variables (value alist reference)
+  "Insert new VALUE to its REFERENCE in given ALIST.
+At the end of the function, the scss variables will be updated."
+  (if alist
+      (setf (cdr (assoc reference front-end-developer-scss-variables))
+        (push value alist))
+    (setq front-end-developer-scss-variables
+      (push (cons reference (list value)) front-end-developer-scss-variables)))
+  (with-temp-buffer
+    (insert (json-encode-alist front-end-developer-scss-variables))
+    (json-pretty-print-buffer)
+    (write-region 1 (point-max) front-end-developer-scss-variables-path)))
 
 ;;; External functions.
 
 (defun front-end-developer-scss-include-screen ()
   "Return mixin with predefined breakpoints variable."
-  (let* ((scss-variables) (breakpoints) (candidates) (answer) (screen)
-         (root-directory (front-end-developer--root-directory))
-         (scss-path (expand-file-name "scss/variables.json" root-directory)))
-    (unless (file-exists-p scss-path)
-      (user-error "front-end-developer: Unable to find %s" scss-path))
-    (setq scss-variables (json-content scss-path))
-    (when (assoc 'breakpoints scss-variables)
-      (setq breakpoints (cdr (assoc 'breakpoints scss-variables))
-            candidates (front-end-developer--scss-breakpoints-candidates breakpoints)))
+  (front-end-developer--set-global)
+  (let ((breakpoints) (candidates) (answer) (screen) (size))
+    (when (assoc 'breakpoints front-end-developer-scss-variables)
+      (setq breakpoints (cdr (assoc 'breakpoints front-end-developer-scss-variables))
+            candidates (front-end-developer--scss-breakpoints-candidates
+                         breakpoints)))
     (setq answer
       (front-end-developer--read
         :input "Reference"
@@ -116,8 +124,12 @@ This function expects to receives a list of already defined BREAKPOINTS."
     (setq screen
       (if (assoc answer candidates)
           (cdr (assoc answer candidates))
-        (front-end-developer--scss-add-to-breakpoints-variables
-          answer scss-variables scss-path breakpoints)
+        (setq size (front-end-developer--read
+                     :regex "^[0-9]+$"
+                     :input "Size"
+                     :input-error "number only"))
+        (front-end-developer--scss-append-to-variables
+          (cons answer (string-to-number size)) breakpoints 'breakpoints)
         answer))
     (format "@include screen ('%s') {\n\t$0\n}" screen)))
 
