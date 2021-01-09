@@ -34,15 +34,12 @@
 
 ;;; Internal functions.
 
-(defun front-end-developer--read (&rest plist)
-  "Provide string input by defined PLIST.
-It require an non-empty string before to return it."
-  (let* ((answer) (valid) (prompt-text) (prompt-error-text)
-         (candidates (plist-get plist :candidates))
-         (input (plist-get plist :input))
-         (input-error (plist-get plist :input-error))
-         (regex (plist-get plist :regex))
-         (prompt (plist-get plist :prompt)))
+(cl-defun front-end-developer--read (&key candidates input input-error regex prompt)
+  "Read a string in the minibuffer, by defined PROMPT function.
+INPUT is a string to prompt with; normally it ends in a colon and a space.
+INPUT-ERROR is the error that will appear if the REGEX validation failed.
+If CANDIDATES is non-nil, it will provide completion in `completing-read'."
+  (let ((answer) (valid) (prompt-text) (prompt-error-text))
     (unless regex
       (setq regex ".+"))
     (unless prompt
@@ -85,9 +82,9 @@ It require an non-empty string before to return it."
   "Insert new BREAKPOINT to its SCSS-VARIABLES loacted in PATH.
 This function expects to receives a list of already defined BREAKPOINTS."
   (let* ((size (front-end-developer--read
-                  :regex "^[0-9]+$"
-                  :input "Size"
-                  :input-error "number only"))
+                 :regex "^[0-9]+$"
+                 :input "Size"
+                 :input-error "number only"))
          (new-breakpoint (cons breakpoint (string-to-number size))))
     (if breakpoints
         (setf (cdr (assoc 'breakpoints scss-variables))
@@ -102,21 +99,15 @@ This function expects to receives a list of already defined BREAKPOINTS."
 
 (defun front-end-developer-scss-include-screen ()
   "Return mixin with predefined breakpoints variable."
-  (let* ((root-directory (front-end-developer--root-directory))
-         (scss-path (expand-file-name "scss/variables.json" root-directory))
-         (scss-variables)
-         (breakpoints)
-         (candidates)
-         (answer)
-         (screen))
+  (let* ((scss-variables) (breakpoints) (candidates) (answer) (screen)
+         (root-directory (front-end-developer--root-directory))
+         (scss-path (expand-file-name "scss/variables.json" root-directory)))
     (unless (file-exists-p scss-path)
       (user-error "front-end-developer: Unable to find %s" scss-path))
     (setq scss-variables (json-content scss-path))
-    (setq breakpoints
-      (when (assoc 'breakpoints scss-variables)
-        (cdr (assoc 'breakpoints scss-variables))))
-    (when breakpoints
-      (setq candidates (front-end-developer--scss-breakpoints-candidates breakpoints)))
+    (when (assoc 'breakpoints scss-variables)
+      (setq breakpoints (cdr (assoc 'breakpoints scss-variables))
+            candidates (front-end-developer--scss-breakpoints-candidates breakpoints)))
     (setq answer
       (front-end-developer--read
         :input "Reference"
